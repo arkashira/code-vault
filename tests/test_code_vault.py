@@ -1,53 +1,37 @@
-from code_vault import CodeVault, Project
+import pytest
+import hashlib
+import json
+from code_vault import CodeVault, VaultEntry
 
-def test_add_project():
-    vault = CodeVault()
-    project = Project("Test Project", "Test Code", "pending")
-    vault.add_project(project)
-    assert len(vault.get_projects()) == 1
+def test_create_vault_entry():
+    code_vault = CodeVault()
+    repository_state = "example repository state"
+    vault_entry = code_vault.create_vault_entry(repository_state)
+    assert vault_entry.repository_state == repository_state
+    assert vault_entry.hash == hashlib.sha256(repository_state.encode()).hexdigest()
 
-def test_get_projects():
-    vault = CodeVault()
-    project1 = Project("Test Project 1", "Test Code 1", "pending")
-    project2 = Project("Test Project 2", "Test Code 2", "pending")
-    vault.add_project(project1)
-    vault.add_project(project2)
-    projects = vault.get_projects()
-    assert len(projects) == 2
-    assert projects[0].name == "Test Project 1"
-    assert projects[1].name == "Test Project 2"
+def test_get_vault_entry():
+    code_vault = CodeVault()
+    repository_state = "example repository state"
+    vault_entry = code_vault.create_vault_entry(repository_state)
+    retrieved_vault_entry = code_vault.get_vault_entry(vault_entry.hash)
+    assert retrieved_vault_entry == vault_entry
 
-def test_view_code():
-    vault = CodeVault()
-    project = Project("Test Project", "Test Code", "pending")
-    vault.add_project(project)
-    code = vault.view_code("Test Project")
-    assert code == "Test Code"
+def test_update_vault_entry():
+    code_vault = CodeVault()
+    repository_state = "example repository state"
+    vault_entry = code_vault.create_vault_entry(repository_state)
+    with pytest.raises(ValueError):
+        code_vault.update_vault_entry(vault_entry.hash, "new repository state")
 
-def test_download_code():
-    vault = CodeVault()
-    project = Project("Test Project", "Test Code", "pending")
-    vault.add_project(project)
-    code = vault.download_code("Test Project")
-    assert code == "Test Code"
+def test_display_vault_entry():
+    code_vault = CodeVault()
+    repository_state = "example repository state"
+    vault_entry = code_vault.create_vault_entry(repository_state)
+    displayed_vault_entry = code_vault.display_vault_entry(vault_entry.hash)
+    assert json.loads(displayed_vault_entry) == vault_entry.__dict__
 
-def test_download_code_not_found():
-    vault = CodeVault()
-    try:
-        vault.download_code("Non-existent Project")
-        assert False
-    except ValueError as e:
-        assert str(e) == "Project not found"
-
-def test_confirm_payment():
-    vault = CodeVault()
-    project = Project("Test Project", "Test Code", "pending")
-    vault.add_project(project)
-    result = vault.confirm_payment("Test Project")
-    assert result
-    assert project.payment_status == "paid"
-
-def test_confirm_payment_not_found():
-    vault = CodeVault()
-    result = vault.confirm_payment("Non-existent Project")
-    assert not result
+def test_display_non_existent_vault_entry():
+    code_vault = CodeVault()
+    with pytest.raises(ValueError):
+        code_vault.display_vault_entry("non_existent_hash")

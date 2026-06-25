@@ -1,39 +1,36 @@
+import hashlib
 import json
 from dataclasses import dataclass
-from typing import List
+from typing import Dict
 
 @dataclass
-class Project:
-    name: str
-    code: str
-    payment_status: str
+class VaultEntry:
+    repository_state: str
+    hash: str
 
 class CodeVault:
     def __init__(self):
-        self.projects = []
+        self.vault = {}
 
-    def add_project(self, project: Project):
-        self.projects.append(project)
+    def create_vault_entry(self, repository_state: str) -> VaultEntry:
+        hash_object = hashlib.sha256(repository_state.encode())
+        hash_hex = hash_object.hexdigest()
+        vault_entry = VaultEntry(repository_state, hash_hex)
+        self.vault[hash_hex] = vault_entry
+        return vault_entry
 
-    def get_projects(self) -> List[Project]:
-        return self.projects
+    def get_vault_entry(self, hash_hex: str) -> VaultEntry:
+        return self.vault.get(hash_hex)
 
-    def view_code(self, project_name: str) -> str:
-        for project in self.projects:
-            if project.name == project_name:
-                return project.code
-        return None
-
-    def download_code(self, project_name: str) -> str:
-        code = self.view_code(project_name)
-        if code:
-            return code
+    def update_vault_entry(self, hash_hex: str, new_repository_state: str) -> None:
+        if hash_hex in self.vault:
+            raise ValueError("Vault is immutable")
         else:
-            raise ValueError("Project not found")
+            raise ValueError("Vault entry not found")
 
-    def confirm_payment(self, project_name: str) -> bool:
-        for project in self.projects:
-            if project.name == project_name:
-                project.payment_status = "paid"
-                return True
-        return False
+    def display_vault_entry(self, hash_hex: str) -> str:
+        vault_entry = self.get_vault_entry(hash_hex)
+        if vault_entry:
+            return json.dumps(vault_entry.__dict__)
+        else:
+            raise ValueError("Vault entry not found")
